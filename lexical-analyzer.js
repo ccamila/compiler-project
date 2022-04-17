@@ -7,17 +7,17 @@
 */
 const fs = require("fs");
 const Lexer = require('flex-js');
-const filePath = './cool-examples/hello_world.cl'
+const filePath = './cool-examples/numbers.cl'
 
 // Converte arquivo em .cl para string.
 const content = fs.readFileSync(filePath).toString();
 
 var lexer = new Lexer();
 
-// options
+// === OPTIONS
 lexer.setIgnoreCase(true);  
-
-//lexer.setDebugEnabled(true); 
+// lexer.setDebugEnabled(true); 
+// ===
 
 // Função para otimizar a criação de Rules a partir da Definição
 
@@ -25,8 +25,9 @@ const setDefinitionAndRule = (param, paramToken) => {
     lexer.addDefinition(param, paramToken);
     const ruleParam = RegExp('{'+param+'}')
     lexer.addRule(ruleParam, function (lexer) {
+        lex()
+        console.log(`\n Found ${param}:` + lexer.text);
     });     
-    //    console.log(`Found ${param} : ` + lexer.text);
 }
 
 // Common definitions
@@ -95,6 +96,7 @@ operators.push({ param: 'Arrow', paramToken: /\=\>/ });
 
 const allDefinitions = [...common, ...types, ...operators]
 
+const tokens = []
 // Reserved keywords
 // case
 // class
@@ -117,14 +119,24 @@ const allDefinitions = [...common, ...types, ...operators]
 // not
 // true
 
+// Adicionar regras de condicionais
+
 allDefinitions.map((c) => {
     setDefinitionAndRule(c.param, c.paramToken)
 })
 
+lexer.addRule('\\', function (lexer) {
+    lexer.reject();
+  });
+
 //WHITESPACE RULE
 lexer.addRule(/\s+/);
 
-console.log('Lexer ', lexer);
+// Regra para atribuição
+// Regras para cada regra da gramática
+
+
+console.log('Lexer ', lexer );
 
 lexer.setSource(content);
 lexer.lex();

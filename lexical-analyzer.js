@@ -7,68 +7,50 @@
 */
 const fs = require("fs");
 const Lexer = require('flex-js');
-const filePath = './cool-examples/numbers.cl'
+const filePath = './cool-examples/hello_world.cl'
 
 // Converte arquivo em .cl para string.
 const content = fs.readFileSync(filePath).toString();
 
 var lexer = new Lexer();
 
-// === OPTIONS
+// === OPTIONS === 
 lexer.setIgnoreCase(true);  
 // lexer.setDebugEnabled(true); 
-// ===
+// ===   ===   ===
 
 // Função para otimizar a criação de Rules a partir da Definição
-
 const setDefinitionAndRule = (param, paramToken) => {
     lexer.addDefinition(param, paramToken);
     const ruleParam = RegExp('{'+param+'}')
     lexer.addRule(ruleParam, function (lexer) {
-        lex()
-        console.log(`\n Found ${param}:` + lexer.text);
+        console.log(`\n Found ${param}: `+lexer.text);
     });     
 }
 
 // Common definitions
-
 const common = [] 
 
+common.push({param: 'At', paramToken: /\@/ });
 common.push({param: 'BlockInit', paramToken: /\{/ });
 common.push({param: 'BlockEnd', paramToken: /\}/ });
 common.push({param: 'ParentesisInit', paramToken: /\(/ });
-common.push({param: 'ParentesisEnd', paramToken: /\(/ });
+common.push({param: 'ParentesisEnd', paramToken: /\)/ });
 common.push({param: 'Colon', paramToken: /\:/ });
 common.push({param: 'Comma', paramToken: /\,/ });
 common.push({param: 'Dot', paramToken: /\./ });
 common.push({param: 'SemiColon', paramToken: /\;/ });
-common.push({param: 'SingleLineComment', paramToken: /\-\-[^\n]*/ });
-
-// COMMON BACKUP
-
-// lexer.addDefinition('BlockInit', /\{/);
-// lexer.addDefinition('BlockEnd', /\}/);
-// lexer.addDefinition('ParentesisInit', /\(/);
-// lexer.addDefinition('ParentesisEnd', /\(/);
-// lexer.addDefinition('Colon', /\:/);
-// lexer.addDefinition('Comma', /\,/);
-// lexer.addDefinition('Dot', /\./);
-// lexer.addDefinition('SemiColon', /\;/);
-// lexer.addDefinition('SingleLineComment', /\-\-[^\n]*/);
+common.push({param: 'SingleLineComment', paramToken: /\-\-[^\n]*/ }); // checar se é assim mesmo
+common.push({param: 'Newline', paramToken: /\n+/ });
 
 // Types
 const types = []
 
 types.push({ param: 'Int', paramToken: /[0-9]+/ });
-types.push({param: 'Float', paramToken: /[0-9]+\.[0-9]+/ });
-
-// TYPES BACKUP
-
-// lexer.addDefinition('Int', /[0-9]+/);
-// lexer.addDefinition('Float', /[0-9]+\.[0-9]+/);
+types.push({ param: 'Type', paramToken: /[A-Z][a-zA-Z_0-9]*/})
+types.push({ param: 'ID', paramToken: /[a-z_][a-zA-Z_0-9]*/})
 
 // Operators
-
 const operators = []
 
 operators.push({ param: 'Plus', paramToken: /\+/ });
@@ -82,44 +64,63 @@ operators.push({ param: 'Assign', paramToken: /\<\-/ });
 operators.push({ param: 'IntComp', paramToken: /\~/ });
 operators.push({ param: 'Arrow', paramToken: /\=\>/ });
 
-// OPERATORS BACKUP
-// lexer.addDefinition('Plus', /\+/);
-// lexer.addDefinition('Minus', /\-/);
-// lexer.addDefinition('Multiply', /\*/);
-// lexer.addDefinition('Divide', /\//);
-// lexer.addDefinition('Equal', /\=/);
-// lexer.addDefinition('LessThan', /\</);
-// lexer.addDefinition('LessThanOrEqual', /\<\=/);
-// lexer.addDefinition('Assign', /\<\-/);
-// lexer.addDefinition('IntComp', /\~/);
-// lexer.addDefinition('Arrow', /\=\>/);
-
-const allDefinitions = [...common, ...types, ...operators]
-
-const tokens = []
 // Reserved keywords
-// case
-// class
-// else
-// esac
-// fi
-// if
-// in 
-// inherits
-// isvoid
-// let
-// loop
-// pool
-// then
-// while
-// case
-// esac
-// new
-// of
-// not
-// true
+const tokens = []
 
-// Adicionar regras de condicionais
+tokens.push({ param: 'case', paramToken: /case\b/ })
+tokens.push({ param: 'class', paramToken: /class\b/})
+tokens.push({ param: 'else', paramToken: /else\b/})
+tokens.push({ param: 'esac', paramToken: /esac\b/})
+tokens.push({ param: 'fi', paramToken: /fi\b/})
+tokens.push({ param: 'if', paramToken: /if\b/})
+tokens.push({ param: 'inherits', paramToken: /inherits\b/})
+tokens.push({ param: 'in', paramToken: /in\b/}) 
+tokens.push({ param: 'isvoid', paramToken: /isvoid\b/})
+tokens.push({ param: 'let', paramToken: /let\b/})
+tokens.push({ param: 'loop', paramToken: /loop\b/})
+tokens.push({ param: 'pool', paramToken: /pool\b/})
+tokens.push({ param: 'then', paramToken: /then\b/})
+tokens.push({ param: 'while', paramToken: /while\b/})
+tokens.push({ param: 'case', paramToken: /case\b/})
+tokens.push({ param: 'esac', paramToken: /esac\b/})
+tokens.push({ param: 'new', paramToken: /new\b/})
+tokens.push({ param: 'of', paramToken: /of\b/})
+tokens.push({ param: 'not', paramToken: /not\b/})
+tokens.push({ param: 'true', paramToken: /true\b/})
+
+const allDefinitions = [...common, ...types, ...operators, ...tokens]
+
+let str 
+
+lexer.addState('str', true);
+lexer.addRule('"', function (lexer) {
+    lexer.begin('str');
+});
+lexer.addStateRule('str', '"', function (lexer) {
+    lexer.begin(Lexer.STATE_INITIAL);
+    var token = str;
+    str = '';
+    return token;
+});
+
+lexer.addStateRule('str', '\n', function (lexer) {
+    throw new Error('Unterminated string constant');
+});
+// Regra de bloco de comentário
+lexer.addRule('(*', function (lexer) {
+    do {
+      var char = lexer.input();
+      if (char === '*') {
+        var nextChar = lexer.input();
+        if (nextChar === ')') {
+          break;
+        }
+      }
+    } while (char !== '');
+});
+
+
+
 
 allDefinitions.map((c) => {
     setDefinitionAndRule(c.param, c.paramToken)
@@ -132,11 +133,7 @@ lexer.addRule('\\', function (lexer) {
 //WHITESPACE RULE
 lexer.addRule(/\s+/);
 
-// Regra para atribuição
-// Regras para cada regra da gramática
-
-
-console.log('Lexer ', lexer );
+// console.log('Lexer ', lexer );
 
 lexer.setSource(content);
 lexer.lex();

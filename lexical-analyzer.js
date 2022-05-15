@@ -16,7 +16,7 @@ var lexer = new Lexer();
 
 // === OPTIONS === 
 lexer.setIgnoreCase(true);  
-lexer.setDebugEnabled(true); 
+// lexer.setDebugEnabled(true); 
 // ===   ===   ===
 
 // Função para otimizar a criação de Rules a partir da Definição
@@ -24,7 +24,7 @@ const setDefinitionAndRule = (param, paramToken) => {
     lexer.addDefinition(param, paramToken);
     const ruleParam = RegExp('{'+param+'}')
     lexer.addRule(ruleParam, function (lexer) {
-        // console.log(`\n Found ${param}: `+lexer.text);
+        console.log(`\n Found ${param}: `+lexer.text);
     });     
 }
 
@@ -92,22 +92,22 @@ const allDefinitions = [...common, ...types, ...operators, ...tokens]
 
 let str
 
-lexer.addState('str', true);
+lexer.addState('STRING', true);
 
 // Inicio
-lexer.addRule('"', function (lexer) {
-    lexer.begin('str');
+lexer.addRule('\"', function (lexer) {
+    lexer.begin('STRING');
 });
 
 // Fim: Volta ao estado inicial
-lexer.addStateRule('str', '"', function (lexer) {
+lexer.addStateRule('STRING', '\"', function (lexer) {
     lexer.begin(Lexer.STATE_INITIAL);
     var token = str;
     str = '';
     return token;
 });
 
-lexer.addStateRule('str', '\n', function (lexer) {
+lexer.addStateRule('STRING', /\n/, function (lexer) {
   throw new Error('Unterminated string constant');
 });
 
